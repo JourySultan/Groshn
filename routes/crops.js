@@ -5,9 +5,8 @@ const auth = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const cloudinary = require('../config/cloudinary');
 const { Readable } = require('stream');
-const Joi = require('joi');
 
-// Helper function to upload image to Cloudinary
+// to Helper function to upload image to Cloudinary
 const uploadToCloudinary = async (buffer) => {
   return new Promise((resolve, reject) => {
     const writeStream = cloudinary.uploader.upload_stream(
@@ -17,7 +16,7 @@ const uploadToCloudinary = async (buffer) => {
       (error, result) => {
         if (error) {
           console.error("Error uploading to Cloudinary:", error);
-          reject({ message: "Image upload failed", error });
+          reject(error);
         } else {
           resolve(result);
         }
@@ -29,24 +28,13 @@ const uploadToCloudinary = async (buffer) => {
   });
 };
 
-// Schema validation using Joi
-const cropSchema = Joi.object({
-  name: Joi.string().required(),
-  price: Joi.number().required(),
-  quantity: Joi.number().required(),
-  fertilizer: Joi.string().required(),
-  harvestDate: Joi.date().required(),
-  growthLocation: Joi.string().valid('بيت محمي', 'بيت غير محمي').required(),
-  cropType: Joi.string().valid('عضوي', 'غير عضوي').required(),
-  category: Joi.string().valid('فواكه', 'خضار').required(),
-  image: Joi.any().optional(),
-});
-
-// Validate crop data using Joi schema
+// Validate crop data
 const validateCropData = (data) => {
-  const { error } = cropSchema.validate(data);
-  if (error) {
-    return error.details[0].message; // Return the validation error message
+  const requiredFields = ['name', 'price', 'quantity', 'fertilizer', 'harvestDate', 'growthLocation', 'cropType', 'category'];
+  for (let field of requiredFields) {
+    if (!data[field]) {
+      return `Missing required field: ${field}`;
+    }
   }
   return null; // No validation errors
 };
@@ -83,7 +71,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
     });
 
     const newCrop = await crop.save();
-    res.status(201).json({ message: 'Crop uploaded successfully', crop: newCrop });
+    res.status(201).json(newCrop);
   } catch (error) {
     console.error('Error adding crop:', error);
     res.status(400).json({ message: 'An error occurred while adding the crop', details: error.message });
@@ -100,7 +88,7 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
     }
 
     let updateData = { ...req.body };
-
+    
     if (req.file) {
       const result = await uploadToCloudinary(req.file.buffer);
       updateData.image = result.secure_url;
@@ -116,7 +104,7 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
       return res.status(404).json({ message: 'Crop not found' });
     }
 
-    res.json({ message: 'Crop updated successfully', crop });
+    res.json(crop);
   } catch (error) {
     console.error('Error updating crop:', error);
     res.status(400).json({ message: 'An error occurred while updating the crop', details: error.message });
@@ -135,7 +123,7 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Crop not found' });
     }
 
-    res.json({ message: 'Crop deleted successfully' });
+    res.json({ message: 'Crop deleted' });
   } catch (error) {
     console.error('Error deleting crop:', error);
     res.status(500).json({ message: 'An error occurred while deleting the crop', details: error.message });
