@@ -52,6 +52,9 @@ router.get('/', auth, async (req, res) => {
 // Add new crop with image
 router.post('/', auth, upload.single('image'), async (req, res) => {
   try {
+    console.log('Received data:', req.body); // Log body data
+    console.log('Received file:', req.file); // Log the image file data
+
     // Validate input data
     const validationError = validateCropData(req.body);
     if (validationError) {
