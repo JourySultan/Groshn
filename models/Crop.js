@@ -5,26 +5,19 @@ const cropSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  category: {
+  cropImportance: {
     type: String,
-    enum: ['فواكه', 'خضار'],
     required: true
   },
-  cropType: {
+  farmName: {
     type: String,
-    enum: ['عضوي', 'غير عضوي'],
     required: true
   },
-  growthLocation: {
+  cropsDescreption: {
     type: String,
-    enum: ['بيت محمي', 'بيت غير محمي'],
     required: true
   },
-  harvestDate: {
-    type: Date,
-    required: true
-  },
-  fertilizer: {
+  cropStoreMethod: {
     type: String,
     required: true
   },
@@ -42,7 +35,7 @@ const cropSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   }
 }, { timestamps: true });
 

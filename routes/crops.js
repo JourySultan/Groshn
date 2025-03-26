@@ -35,7 +35,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
     console.log('Received file:', req.file);  // Log the uploaded file
 
     // Validate input data
-    if (!req.body.fertilizer || !req.body.quantity || !req.body.price || !req.file) {
+    if (!req.body.name || !req.body.quantity || !req.body.price || !req.file) {
       return res.status(400).json({ message: 'All fields and image are required.' });
     }
 
@@ -46,11 +46,10 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
 // Create the new crop in the database with Cloudinary URL
 const crop = new Crop({
   name: req.body.name,  // Crop name
-  category: req.body.category,  // Crop category
-  growthLocation: req.body.growthLocation,  // Growth location
-  cropType: req.body.cropType,  // Crop type
-  harvestDate: req.body.harvestDate,  // Harvest date
-  fertilizer: req.body.fertilizer,  // Fertilizer used
+  cropImportance: req.body.cropImportance,  // Crop cropImportance
+  farmName: req.body.farmName,  // farmName
+  cropsDescreption: req.body.cropsDescreption,  //cropsDescreption
+  cropStoreMethod: req.body.cropStoreMethod,  //cropStoreMethod
   quantity: req.body.quantity,  // Quantity
   price: req.body.price,  // Price
   image: result.secure_url,  // Cloudinary image URL
