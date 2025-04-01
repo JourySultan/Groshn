@@ -28,6 +28,26 @@ const uploadToCloudinary = (buffer, fileName) => {
   });
 };
 
+// Get a single crop by its ID
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const crop = await Crop.findOne({
+      _id: req.params.id,
+      user: req.user.userId, // Ensure the user owns the crop
+    });
+
+    if (!crop) {
+      return res.status(404).json({ message: 'Crop not found' });
+    }
+
+    res.json(crop);
+  } catch (error) {
+    console.error('Error fetching crop:', error);
+    res.status(500).json({ message: 'An error occurred while fetching the crop', details: error.message });
+  }
+});
+
+
 // Route to handle adding new crops
 router.post('/', auth, upload.single('image'), async (req, res) => {
   try {
