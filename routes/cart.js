@@ -77,7 +77,7 @@ router.delete('/:id', protect, async (req, res) => {
   try {
     const cartItem = await CartItem.findOneAndDelete({
       _id: req.params.id,
-      user: req.user.userId
+      user: req.user._id
     });
 
     if (!cartItem) {
