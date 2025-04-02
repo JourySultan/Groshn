@@ -27,4 +27,14 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+// Get all surplus suggestions
+router.get('/', protect, authorize('admin'), async (req, res) => {
+  try {
+    const surplus = await Surplus.find();
+    res.json(surplus);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
