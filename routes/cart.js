@@ -28,7 +28,7 @@ router.post('/', protect, async (req, res) => {
 
     // Check if item already in cart
     let cartItem = await CartItem.findOne({ 
-      user: req.user.userId,
+      user: req.user._id,
       crop: cropId 
     });
 
@@ -39,7 +39,7 @@ router.post('/', protect, async (req, res) => {
     } else {
       // Create new cart item
       cartItem = new CartItem({
-        user: req.user.userId,
+        user: req.user._id,
         crop: cropId,
         quantity
       });
@@ -57,7 +57,7 @@ router.put('/:id', protect, async (req, res) => {
   try {
     const { quantity } = req.body;
     const cartItem = await CartItem.findOneAndUpdate(
-      { _id: req.params.id, user: req.user.userId },
+      { _id: req.params.id, user: req.user.user._id },
       { quantity },
       { new: true }
     );
