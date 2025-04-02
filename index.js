@@ -27,6 +27,7 @@ app.use('/api/crops', cropRoutes);
 app.use('/api/surplus', surplusRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/users', userRoutes); 
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
