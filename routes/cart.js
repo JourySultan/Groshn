@@ -7,7 +7,7 @@ const { protect, authorize } = require('../middleware/auth');
 // Get cart items
 router.get('/', protect, async (req, res) => {
   try {
-    const cartItems = await CartItem.find({ user: req.user._id })
+    const cartItems = await CartItem.find({ user: req.user._id }) 
       .populate('crop');
     res.json(cartItems);
   } catch (error) {

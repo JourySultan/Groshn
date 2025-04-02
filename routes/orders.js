@@ -21,7 +21,7 @@ router.get('/all', protect, authorize('admin'), async (req, res) => {
 // Get user's orders
 router.get('/', protect, async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user.userId })
+    const orders = await Order.find({ user: req.user._id })
       .populate('items.crop')
       .sort({ createdAt: -1 });
     res.json(orders);
@@ -36,7 +36,7 @@ router.post('/', protect, async (req, res) => {
     const { shippingAddress, paymentMethod } = req.body;
 
     // Get cart items
-    const cartItems = await CartItem.find({ user: req.user.userId })
+    const cartItems = await CartItem.find({ user: req.user._id })
       .populate('crop');
 
     if (cartItems.length === 0) {
@@ -55,7 +55,7 @@ router.post('/', protect, async (req, res) => {
 
     // Create order
     const order = new Order({
-      user: req.user.userId,
+      user: req.user._id,
       items,
       totalAmount,
       shippingAddress,
@@ -73,7 +73,7 @@ router.post('/', protect, async (req, res) => {
 
       // Save order and clear cart
       await order.save();
-      await CartItem.deleteMany({ user: req.user.userId });
+      await CartItem.deleteMany({ user: req.user._id });
 
       res.status(201).json({
         order,
@@ -82,7 +82,7 @@ router.post('/', protect, async (req, res) => {
     } else {
       // Cash on delivery
       await order.save();
-      await CartItem.deleteMany({ user: req.user.userId });
+      await CartItem.deleteMany({ user: req.user._id });
       
       res.status(201).json({ order });
     }
@@ -102,7 +102,7 @@ router.get('/:id', protect, async (req, res) => {
     } else {
       order = await Order.findOne({
         _id: req.params.id,
-        user: req.user.userId
+        user: req.user._id
       }).populate('items.crop');
     }
 
