@@ -7,6 +7,7 @@ const cropRoutes = require('./routes/crops');
 const surplusRoutes = require('./routes/surplus');
 const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/orders');
+const userRoutes = require('./routes/users');
 
 dotenv.config();
 
