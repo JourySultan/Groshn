@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Surplus = require('../models/Surplus');
-const auth = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 // Submit surplus suggestion
-router.post('/', auth, async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const surplus = new Surplus({
       ...req.body,
@@ -18,7 +18,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Get user's surplus suggestions
-router.get('/', auth, async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const surplus = await Surplus.find({ user: req.user.userId });
     res.json(surplus);

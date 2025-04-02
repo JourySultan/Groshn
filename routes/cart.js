@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const CartItem = require('../models/CartItem');
 const Crop = require('../models/Crop');
-const auth = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 // Get cart items
-router.get('/', auth, async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const cartItems = await CartItem.find({ user: req.user.userId })
       .populate('crop');
@@ -16,7 +16,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Add item to cart
-router.post('/', auth, async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const { cropId, quantity } = req.body;
 
@@ -53,7 +53,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Update cart item quantity
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', protect, async (req, res) => {
   try {
     const { quantity } = req.body;
     const cartItem = await CartItem.findOneAndUpdate(
@@ -73,7 +73,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Remove item from cart
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', protect, async (req, res) => {
   try {
     const cartItem = await CartItem.findOneAndDelete({
       _id: req.params.id,
