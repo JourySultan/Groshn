@@ -8,7 +8,7 @@ router.post('/', protect, async (req, res) => {
   try {
     const surplus = new Surplus({
       ...req.body,
-      user: req.user.userId
+      user: req.user._id
     });
     const newSurplus = await surplus.save();
     res.status(201).json(newSurplus);
@@ -20,7 +20,7 @@ router.post('/', protect, async (req, res) => {
 // Get user's surplus suggestions
 router.get('/', protect, async (req, res) => {
   try {
-    const surplus = await Surplus.find({ user: req.user.userId });
+    const surplus = await Surplus.find({ user: req.user._id });
     res.json(surplus);
   } catch (error) {
     res.status(500).json({ message: error.message });
