@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
-const cloudinary = require('../config/cloudinary');;
+const { protect, authorize } = require('../middleware/auth');
+const cloudinary = require('../config/cloudinary');
 const multer = require('multer');
 const Crop = require('../models/Crop');
 
-// Configure multer to use memoryStorage (no disk storage needed)
+// Configure multer to use memoryStorage
 const storage = multer.memoryStorage();
-
 const upload = multer({ storage: storage });
 
 // Cloudinary upload helper
@@ -15,7 +14,7 @@ const uploadToCloudinary = (buffer, fileName) => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.upload_stream(
       {
-        public_id: fileName,  // Optional: You can define a custom filename
+        public_id: fileName,
       },
       (error, result) => {
         if (error) {
@@ -24,17 +23,14 @@ const uploadToCloudinary = (buffer, fileName) => {
           resolve(result);
         }
       }
-    ).end(buffer); // send the image buffer directly to Cloudinary
+    ).end(buffer);
   });
 };
 
-// Get a single crop by its ID
-router.get('/:id', auth, async (req, res) => {
+// Get a single crop by its ID (Public route)
+router.get('/:id', async (req, res) => {
   try {
-    const crop = await Crop.findOne({
-      _id: req.params.id,
-      user: req.user.userId, // Ensure the user owns the crop
-    });
+    const crop = await Crop.findById(req.params.id);
 
     if (!crop) {
       return res.status(404).json({ message: 'Crop not found' });
@@ -47,73 +43,56 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-
-// Route to handle adding new crops
-router.post('/', auth, upload.single('image'), async (req, res) => {
+// Route to handle adding new crops (Admin only)
+router.post('/', protect, authorize('admin'), upload.single('image'), async (req, res) => {
   try {
-    console.log('Received data:', req.body);  // Log the body parameters
-    console.log('Received file:', req.file);  // Log the uploaded file
+    console.log('Received data:', req.body);
+    console.log('Received file:', req.file);
 
-    // Validate input data
     if (!req.body.name || !req.body.quantity || !req.body.price || !req.file) {
       return res.status(400).json({ message: 'All fields and image are required.' });
     }
 
-    // Upload the image to Cloudinary
     const result = await uploadToCloudinary(req.file.buffer, Date.now().toString());
-    console.log('Cloudinary upload result:', result);  // Log the Cloudinary upload result
+    console.log('Cloudinary upload result:', result);
 
-// Create the new crop in the database with Cloudinary URL
-const crop = new Crop({
-  name: req.body.name,  // Crop name
-  cropImportance: req.body.cropImportance,  // Crop cropImportance
-  farmName: req.body.farmName,  // farmName
-  cropsDescreption: req.body.cropsDescreption,  //cropsDescreption
-  cropStoreMethod: req.body.cropStoreMethod,  //cropStoreMethod
-  quantity: req.body.quantity,  // Quantity
-  price: req.body.price,  // Price
-  image: result.secure_url,  // Cloudinary image URL
-  user: req.user.userId,  // User ID from the session or JWT
-});
+    const crop = new Crop({
+      name: req.body.name,
+      cropImportance: req.body.cropImportance,
+      farmName: req.body.farmName,
+      cropsDescreption: req.body.cropsDescreption,
+      cropStoreMethod: req.body.cropStoreMethod,
+      quantity: req.body.quantity,
+      price: req.body.price,
+      image: result.secure_url,
+      user: req.user._id,
+    });
 
-    // Save the new crop in the database
     const newCrop = await crop.save();
-
-    // Respond with the newly created crop
     res.status(201).json(newCrop);
 
   } catch (error) {
-    console.error('Error adding crop:', error);  // Log the error in detail
-
-    // Send detailed error message for better debugging
+    console.error('Error adding crop:', error);
     res.status(400).json({ 
       message: 'An error occurred while adding the crop',
-      details: error.toString(),  // Log the full error details, including stack trace
+      details: error.toString(),
     });
   }
 });
 
-
-// Get all crops
-router.get('/', auth, async (req, res) => {
+// Get all crops (Public route)
+router.get('/', async (req, res) => {
   try {
-    const crops = await Crop.find({ user: req.user.userId });
+    const crops = await Crop.find();
     res.json(crops);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-
-// Update crop with image
-router.put('/:id', auth, upload.single('image'), async (req, res) => {
+// Update crop with image (Admin only)
+router.put('/:id', protect, authorize('admin'), upload.single('image'), async (req, res) => {
   try {
-    // Validate input data
-    const validationError = validateCropData(req.body);
-    if (validationError) {
-      return res.status(400).json({ message: validationError });
-    }
-
     let updateData = { ...req.body };
     
     if (req.file) {
@@ -121,8 +100,8 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
       updateData.image = result.secure_url;
     }
 
-    const crop = await Crop.findOneAndUpdate(
-      { _id: req.params.id, user: req.user.userId },
+    const crop = await Crop.findByIdAndUpdate(
+      req.params.id,
       updateData,
       { new: true }
     );
@@ -138,13 +117,10 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
   }
 });
 
-// Delete crop
-router.delete('/:id', auth, async (req, res) => {
+// Delete crop (Admin only)
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
-    const crop = await Crop.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user.userId
-    });
+    const crop = await Crop.findByIdAndDelete(req.params.id);
 
     if (!crop) {
       return res.status(404).json({ message: 'Crop not found' });

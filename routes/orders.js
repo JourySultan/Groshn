@@ -2,11 +2,24 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 const CartItem = require('../models/CartItem');
-const auth = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+// Get all orders (Admin only)
+router.get('/all', protect, authorize('admin'), async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('items.crop')
+      .populate('user', 'username email')
+      .sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get user's orders
-router.get('/', auth, async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user.userId })
       .populate('items.crop')
@@ -18,7 +31,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Create new order
-router.post('/', auth, async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const { shippingAddress, paymentMethod } = req.body;
 
@@ -46,7 +59,8 @@ router.post('/', auth, async (req, res) => {
       items,
       totalAmount,
       shippingAddress,
-      paymentMethod
+      paymentMethod,
+      status: 'pending' // Default status
     });
 
     if (paymentMethod === 'credit_card') {
@@ -77,19 +91,75 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// Get order details
-router.get('/:id', auth, async (req, res) => {
+// Get order details (Admin can view any order, users can only view their own)
+router.get('/:id', protect, async (req, res) => {
   try {
-    const order = await Order.findOne({
-      _id: req.params.id,
-      user: req.user.userId
-    }).populate('items.crop');
+    let order;
+    if (req.user.role === 'admin') {
+      order = await Order.findById(req.params.id)
+        .populate('items.crop')
+        .populate('user', 'username email');
+    } else {
+      order = await Order.findOne({
+        _id: req.params.id,
+        user: req.user.userId
+      }).populate('items.crop');
+    }
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
     res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update order status (Admin only)
+router.put('/:id', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    // Validate status
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        message: 'Invalid status. Must be one of: ' + validStatuses.join(', ') 
+      });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { 
+        status,
+        updatedAt: Date.now()
+      },
+      { new: true }
+    )
+    .populate('items.crop')
+    .populate('user', 'username email');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json(order);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Delete order (Admin only)
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
+  try {
+    const order = await Order.findByIdAndDelete(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json({ message: 'Order deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
