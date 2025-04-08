@@ -17,20 +17,17 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
-// Get user's surplus suggestions
+// Get all surplus suggestions (admin) or user's surplus suggestions
 router.get('/', protect, async (req, res) => {
   try {
+    // If user is admin, return all surplus
+    if (req.user.role === 'admin') {
+      const surplus = await Surplus.find();
+      return res.json(surplus);
+    }
+    
+    // If regular user, return only their surplus
     const surplus = await Surplus.find({ user: req.user._id });
-    res.json(surplus);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get all surplus suggestions
-router.get('/', protect, authorize('admin'), async (req, res) => {
-  try {
-    const surplus = await Surplus.find();
     res.json(surplus);
   } catch (error) {
     res.status(500).json({ message: error.message });
